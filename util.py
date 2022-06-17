@@ -15,11 +15,13 @@ def loadDataset(dataset_filename, tabular_classification_filename):
 
     target = config_json["tabular_configuration"]["target"]["target"]
     features = config_json["tabular_configuration"]["features"].items()
-    X = pd.read_csv('datasets/' + dataset_filename).drop(target, axis=1, errors='ignore')
+    df = pd.read_csv('datasets/' + dataset_filename)
+    X = df.drop(target, axis=1, errors='ignore')
+    Y = df[target]
 
     X = feature_preparation(X, features)
 
-    return X, target, features
+    return X, Y, target, features
 
 
 def convertObjectColumnDatatypesToCategory(X):
