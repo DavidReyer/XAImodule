@@ -67,31 +67,3 @@ def explainLime(automl, X):
     exp.save_to_file('lime_out.html', labels=None, predict_proba=True, show_predicted_value=True)
 
 
-def explainXAIToolbox(automl, X, Y):
-    X = X.drop("sex", axis=1, errors='ignore')
-    categorical_columns = list(X.select_dtypes(['category']).columns) + list(X.select_dtypes(['bool']).columns)
-    for col in list(X.columns):
-        feature_imbalance_plot = xai.imbalance_plot(X, col, categorical_cols=categorical_columns)
-        #feature_imbalance_plot = xai.imbalance_plot(X, "age", categorical_cols=categorical_columns)
-        plt.margins(0.2)
-        plt.subplots_adjust(bottom=0.5)
-        plt.savefig(col + "_feature_imbalance.png")
-
-    proc_X, cat_names, cat_features = processCategorical(X)
-    #target_imbalance_plot = xai.imbalance_plot(Y, "survived")
-    feature_correlation_plot = xai.correlations(proc_X, include_categorical=False, categorical_cols=categorical_columns, plot_type="matrix")
-    plt.margins(0.2)
-    plt.subplots_adjust(bottom=0.5)
-    plt.savefig("feature_correlation_matrix.png")
-    feature_correlation_plot = xai.correlations(proc_X, include_categorical=False, categorical_cols=categorical_columns)
-    plt.margins(0.2)
-    plt.subplots_adjust(bottom=0.5)
-    plt.savefig("feature_correlation.png")
-
-
-    imp = xai.feature_importance(X, Y, automl.predict_proba)
-
-    imp.head()
-    plt.margins(0.2)
-    plt.subplots_adjust(bottom=0.5)
-    plt.savefig("model_eval.png")

@@ -2,10 +2,15 @@ import shap
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import date, datetime
+
+
+def timestamp():
+    return date.strftime(datetime.now(), '_%Y-%m-%d_%H-%M-%S-%f')
 
 
 def make_html_force_plot(explainer, shap_values, X, class_idx, row_idx, path, filename_detail):
-    filename = path + f"shap_force_plot_class_{class_idx}_row_{row_idx}_{filename_detail}.html"
+    filename = path + f"shap_force_plot_class_{class_idx}_row_{row_idx}_{filename_detail}_{timestamp()}.html"
     shap.save_html(filename,
                    shap.force_plot(explainer.expected_value[class_idx],
                                    shap_values[class_idx][row_idx],
@@ -14,7 +19,7 @@ def make_html_force_plot(explainer, shap_values, X, class_idx, row_idx, path, fi
 
 
 def make_svg_waterfall_plot(explainer, shap_values, X, class_idx, row_idx, path, filename_detail):
-    filename = path + f"waterfall_class_{class_idx}_row_{row_idx}_{filename_detail}.svg"
+    filename = path + f"waterfall_class_{class_idx}_row_{row_idx}_{filename_detail}_{timestamp()}.svg"
     shap.waterfall_plot(
         shap.Explanation(values=shap_values[class_idx][row_idx], base_values=explainer.expected_value[class_idx],
                          data=X.iloc[row_idx], feature_names=X.columns.tolist()),
@@ -25,7 +30,7 @@ def make_svg_waterfall_plot(explainer, shap_values, X, class_idx, row_idx, path,
 
 
 def make_svg_beeswarm_plot(shap_values, explainer, X, class_idx, path, filename_detail):
-    filename = path + f"beeswarm_class_{class_idx}_{filename_detail}.svg"
+    filename = path + f"beeswarm_class_{class_idx}_{filename_detail}_{timestamp()}.svg"
     shap.plots.beeswarm(shap.Explanation(values=shap_values[class_idx],
                                          base_values=explainer.expected_value[class_idx],
                                          data=X,
@@ -36,7 +41,7 @@ def make_svg_beeswarm_plot(shap_values, explainer, X, class_idx, path, filename_
 
 
 def make_svg_summary_plot(shap_values, X, path):
-    filename = path + "summary_bar.svg"
+    filename = path + "summary_bar" + timestamp() + ".svg"
     shap.summary_plot(shap_values=shap_values, features=X, plot_type='bar')
     plt.savefig(filename)
     plt.clf()
@@ -44,7 +49,7 @@ def make_svg_summary_plot(shap_values, X, path):
 
 
 def compile_html(html_plots, image_plots, automl_name, path):
-    with open(path + "shap_" + automl_name + ".html", "w") as output_file:
+    with open(path + "shap_" + automl_name + timestamp() + ".html", "w") as output_file:
         output_file.write(f"<h1> SHAP output of {automl_name} </h1>\n\n")
         for filename in html_plots:
             with open(filename, "r") as shap_file:
@@ -61,7 +66,12 @@ def compile_html(html_plots, image_plots, automl_name, path):
         output_file.close()
 
 
-def explainShap(automl, X, Y, automl_name):
+def removePlots(plots):
+    for plot_path in plots:
+        os.remove(plot_path)
+
+
+def explainShap(automl, X, Y, automl_name, remove_plots=True, number_of_samples=5):
 
     def prediction_probability(X, cols=X.columns, dtypes=X.dtypes):
         df = pd.DataFrame(data=X, columns=cols)
@@ -78,7 +88,8 @@ def explainShap(automl, X, Y, automl_name):
         if not os.path.exists(path):
             os.makedirs(path)
 
-    X_set = X.iloc[0:500, :]
+    X_set = X.iloc[0:number_of_samples, :]
+
 
     explainer = shap.KernelExplainer(prediction_probability, X)
     shap_values = explainer.shap_values(X_set)
@@ -95,19 +106,22 @@ def explainShap(automl, X, Y, automl_name):
 
         filename = make_html_force_plot(explainer, shap_values, X_set, class_idx, row_idx, html_plot_path, "truth")
         html_plot_filenames.append(filename)
-        filename = make_html_force_plot(explainer, shap_values, X_set, prediction, row_idx, html_plot_path, "prediction")
+        filename = make_html_force_plot(explainer, shap_values, X_set, int(prediction), row_idx, html_plot_path, "prediction")
         html_plot_filenames.append(filename)
 
         filename = make_svg_waterfall_plot(explainer, shap_values, X_set, class_idx, row_idx, image_plot_path, "truth")
         image_plot_filenames.append(filename)
-        filename = make_svg_waterfall_plot(explainer, shap_values, X_set, prediction, row_idx, image_plot_path, "prediction")
+        filename = make_svg_waterfall_plot(explainer, shap_values, X_set, int(prediction), row_idx, image_plot_path, "prediction")
         image_plot_filenames.append(filename)
         filename = make_svg_beeswarm_plot(shap_values, explainer, X_set, class_idx, image_plot_path, "truth")
         image_plot_filenames.append(filename)
-        filename = make_svg_beeswarm_plot(shap_values, explainer, X_set, prediction, image_plot_path, "prediction")
+        filename = make_svg_beeswarm_plot(shap_values, explainer, X_set, int(prediction), image_plot_path, "prediction")
         image_plot_filenames.append(filename)
 
     filename = make_svg_summary_plot(shap_values, X_set, image_plot_path)
     image_plot_filenames.append(filename)
 
     compile_html(html_plot_filenames, image_plot_filenames, automl_name, output_path)
+    if remove_plots:
+        removePlots(html_plot_filenames)
+        removePlots(image_plot_filenames)

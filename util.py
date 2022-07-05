@@ -1,21 +1,16 @@
-import shap
 import json
 import pickle
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from enum import Enum, unique
-
-
 from predict_time_sources import DataType, SplitMethod, feature_preparation
 
 def loadDataset(dataset_filename, tabular_classification_filename):
-    with open('datasets/' + tabular_classification_filename) as file:
+    with open(tabular_classification_filename) as file:
         config_json = json.load(file)
 
     target = config_json["tabular_configuration"]["target"]["target"]
     features = config_json["tabular_configuration"]["features"].items()
-    df = pd.read_csv('datasets/' + dataset_filename)
+    df = pd.read_csv(dataset_filename)
     X = df.drop(target, axis=1, errors='ignore')
     Y = df[target]
 
@@ -31,7 +26,7 @@ def convertObjectColumnDatatypesToCategory(X):
 
 
 def loadAutoml(filepath):
-    with open('models/' + filepath, 'rb') as file:
+    with open(filepath, 'rb') as file:
         return pickle.load(file)
 
 
