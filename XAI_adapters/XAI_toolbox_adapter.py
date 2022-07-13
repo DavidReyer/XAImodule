@@ -120,6 +120,7 @@ def explainXAIToolbox(X, Y, target, dataset_name, remove_plots=True):
 
 
     plt.clf()
+    plt.rcParams['figure.figsize'] = [16, 16]
     feature_correlation_plot = xai.correlations(proc_X,
                                                 include_categorical=True,
                                                 categorical_cols=categorical_columns,
